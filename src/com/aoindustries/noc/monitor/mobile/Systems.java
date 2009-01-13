@@ -14,9 +14,7 @@ import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.Choice;
 import javax.microedition.lcdui.ChoiceGroup;
 import javax.microedition.lcdui.Command;
-import javax.microedition.lcdui.CommandListener;
 import javax.microedition.lcdui.Display;
-import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Form;
 import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.Item;
@@ -38,10 +36,13 @@ import javax.microedition.midlet.MIDlet;
  *
  * Possible improvements:
  *     Use record to remember last alert level filter
+ *     Report warnings on all else conditions or unexpected conditions/states
+ * 
+ * TODO: buzz when there is a new critical alert
  *
  * @author  AO Industries, Inc.
  */
-public class Systems extends MIDlet implements CommandListener, UpdaterListener, ItemStateListener, ItemCommandListener {
+public class Systems extends MIDlet implements UpdaterListener, ItemStateListener, ItemCommandListener {
 
     private static final boolean DEBUG = false;
     
@@ -75,10 +76,6 @@ public class Systems extends MIDlet implements CommandListener, UpdaterListener,
             if(form==null) {
                 Form newForm = new Form("Systems");
 
-                // Commands
-                newForm.setCommandListener(this);
-                newForm.addCommand(new Command("Up", Command.BACK, 1));
-
                 // Items
                 newForm.setItemStateListener(this);
 
@@ -90,7 +87,7 @@ public class Systems extends MIDlet implements CommandListener, UpdaterListener,
                 filter.append("High", getDotAlertImage(AlertLevel.HIGH));
                 filter.append("Critical", getDotAlertImage(AlertLevel.CRITICAL));
                 filter.setSelectedIndex(alertLevel, true);
-                //filter.setLayout(Item.LAYOUT_NEWLINE_AFTER);
+                filter.setLayout(Item.LAYOUT_LEFT|Item.LAYOUT_SHRINK);
                 newForm.append(filter);
 
                 updatedTimeField = new StringItem("Last Updated", "");
@@ -403,23 +400,10 @@ public class Systems extends MIDlet implements CommandListener, UpdaterListener,
         }
     }
 
-    public void commandAction(Command c, Displayable d) {
-        try {
-            if("Up".equals(c.getLabel())) {
-                if(path.size()>1) path.removeElementAt(path.size()-1);
-                updateForm(updater.getNodeSnapshot());
-            }
-        } catch(Exception err) {
-            alert(err);
-        }
-    }
-
-    
     public void commandAction(Command c, Item item) {
         try {
             if(item==updatedTimeField) {
                 if("Update Now".equals(c.getLabel())) updater.updateNow();
-                // TODO: Throw error on all else conditions and display all errors
             }
         } catch(Exception err) {
             alert(err);
