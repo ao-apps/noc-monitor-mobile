@@ -89,6 +89,7 @@ class Updater implements Runnable {
 
     public void run() {
         final Thread currentThread = Thread.currentThread();
+        long lastStartTime = System.currentTimeMillis();
         while(true) {
             try {
                 // Stop if should no longer be running
@@ -122,10 +123,10 @@ class Updater implements Runnable {
                 notifyListenersNodesUpdated(snapshot);
                 
                 // Wait five minutes or until interrupted
-                final long sleepUntil = System.currentTimeMillis() + UPDATE_INTERVAL;
+                final long sleepUntil = lastStartTime + UPDATE_INTERVAL;
                 while(!updateNow) {
                     long sleepLeft = sleepUntil - System.currentTimeMillis();
-                    // Sleep done
+                    // Sleep done or not needed
                     if(sleepLeft<=0) break;
                     // System time reset
                     if(sleepLeft>UPDATE_INTERVAL) break;
