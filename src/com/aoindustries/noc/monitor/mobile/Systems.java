@@ -11,12 +11,11 @@ import java.util.Vector;
 import javax.microedition.lcdui.Choice;
 import javax.microedition.lcdui.ChoiceGroup;
 import javax.microedition.lcdui.Command;
-import javax.microedition.lcdui.CommandListener;
 import javax.microedition.lcdui.Display;
-import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Form;
 import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.Item;
+import javax.microedition.lcdui.ItemCommandListener;
 import javax.microedition.lcdui.ItemStateListener;
 import javax.microedition.lcdui.StringItem;
 import javax.microedition.midlet.MIDlet;
@@ -36,7 +35,7 @@ import javax.microedition.midlet.MIDlet;
  *
  * @author  AO Industries, Inc.
  */
-public class Systems extends MIDlet implements UpdaterListener, CommandListener, ItemStateListener {
+public class Systems extends MIDlet implements UpdaterListener, ItemStateListener, ItemCommandListener {
 
     private static final boolean DEBUG = false;
 
@@ -48,8 +47,8 @@ public class Systems extends MIDlet implements UpdaterListener, CommandListener,
     private Form form;
     private StringItem updatedDateField;
     private ChoiceGroup filter;
-    private ChoiceGroup parents;
-    private ChoiceGroup children;
+    private ChoiceGroup tree;
+    private Vector treePaths = new Vector();
     private StringItem alertMessage;
     private byte alertLevel;
     private Vector path = new Vector();
@@ -87,10 +86,6 @@ public class Systems extends MIDlet implements UpdaterListener, CommandListener,
             if(form==null) {
                 Form newForm = new Form("Systems");
                 
-                // Commands
-                newForm.setCommandListener(this);
-                newForm.addCommand(new Command("Update Now", Command.SCREEN, 2));
-
                 // Items
                 newForm.setItemStateListener(this);
 
@@ -107,14 +102,13 @@ public class Systems extends MIDlet implements UpdaterListener, CommandListener,
                 updatedDateField = new StringItem("Last Updated", "");
                 //updatedDateField.setLayout(Item.LAYOUT_NEWLINE_AFTER);
                 //updatedDateField.setLayout(Item.LAYOUT_2);
+                updatedDateField.addCommand(new Command("Update Now", Command.SCREEN, 2));
+                updatedDateField.setItemCommandListener(this);
                 newForm.append(updatedDateField);
                 
-                parents = new ChoiceGroup("Path", Choice.MULTIPLE);
-                parents.setFitPolicy(Choice.TEXT_WRAP_OFF);
+                tree = new ChoiceGroup(null, Choice.EXCLUSIVE);
+                tree.setFitPolicy(Choice.TEXT_WRAP_OFF);
 
-                children = new ChoiceGroup("Children", Choice.MULTIPLE);
-                children.setFitPolicy(Choice.TEXT_WRAP_OFF);
-                
                 alertMessage = new StringItem("Alert Message", "");
 
                 Display display = Display.getDisplay(this);
@@ -128,11 +122,15 @@ public class Systems extends MIDlet implements UpdaterListener, CommandListener,
             if(snapshot==null) {
                 // Remove all form items after the date field
                 path.removeAllElements();
+                tree.deleteAll();
+                treePaths.removeAllElements();
                 while(form.size()>formIndex) form.delete(form.size()-1);
             } else {
+                int treeIndex = 0;
                 // Make sure the path is still valid, keep as much as possible
                 Vector currentChildren = new Vector(1);
                 Node currentNode = null;
+                String[] currentNodePath = null;
                 currentChildren.addElement(snapshot.getRootNode());
                 for(int c=0; c<path.size(); c++) {
                     if(DEBUG) System.out.println("currentChildren.size()="+currentChildren.size());
@@ -148,14 +146,20 @@ public class Systems extends MIDlet implements UpdaterListener, CommandListener,
                     }
                     if(foundChild!=null) {
                         String label = foundChild.getLabel();
+                        Image alertImage = getAlertImage(foundChild.getAlertLevel());
+                        String[] newPath = new String[treeIndex+1];
+                        for(int d=0; d<=treeIndex; d++) newPath[d] = (String)path.elementAt(d);
                         // Add if necessary
                         currentNode = foundChild;
-                        if(parents.size()<=c) {
-                            parents.append(label, getAlertImage(foundChild.getAlertLevel()));
-                        } else /*if(!parents.getString(c).equals(label))*/ {
-                            parents.set(c, label, getAlertImage(foundChild.getAlertLevel()));
+                        currentNodePath = newPath;
+                        if(tree.size()<=treeIndex) {
+                            tree.append(label, alertImage);
+                            treePaths.addElement(newPath);
+                        } else {
+                            if(!tree.getString(treeIndex).equals(label) || alertImage!=tree.getImage(treeIndex)) tree.set(treeIndex, label, alertImage);
+                            treePaths.setElementAt(newPath, treeIndex);
                         }
-                        parents.setSelectedIndex(c, true);
+                        treeIndex++;
                         Vector newChildren = foundChild.getChildren();
                         currentChildren.removeAllElements();
                         if(newChildren!=null) {
@@ -177,62 +181,74 @@ public class Systems extends MIDlet implements UpdaterListener, CommandListener,
                         break;
                     }
                 }
-                // Delete parents that should no longer exist
-                while(parents.size()>path.size()) parents.delete(parents.size()-1);
-                if(parents.size()==0) {
-                    if(form.size()>formIndex && form.get(formIndex)==parents) form.delete(formIndex);
-                } else {
-                    if(form.size()<=formIndex || form.get(formIndex)!=parents) form.insert(formIndex, parents);
-                    formIndex++;
-                }
 
-                // So long as there is only one child, auto-select that node
-                /*
-                while(currentChildren.size()==1) {
-                    Node foundChild = (Node)currentChildren.elementAt(0);
-                    String label = foundChild.getLabel();
-                    path.addElement(label);
-                    parents.append(label, null);
-                    Vector newChildren = foundChild.getChildren();
+                // Auto-select the first path element
+                if(path.isEmpty() && currentChildren.size()==1) {
+                    currentNode = (Node)currentChildren.elementAt(0);
+                    String label = currentNode.getLabel();
+                    Image alertImage = getAlertImage(currentNode.getAlertLevel());
+                    currentNodePath = new String[] {currentNode.getLabel()};
+                    if(tree.size()<=treeIndex) {
+                        tree.append(label, alertImage);
+                        treePaths.addElement(currentNodePath);
+                    } else {
+                        if(!tree.getString(treeIndex).equals(label) || alertImage!=tree.getImage(treeIndex)) tree.set(treeIndex, label, alertImage);
+                        treePaths.setElementAt(currentNodePath, treeIndex);
+                    }
+                    treeIndex++;
+                    Vector newChildren = currentNode.getChildren();
                     currentChildren.removeAllElements();
                     if(newChildren!=null) {
                         int newLen = newChildren.size();
+                        if(DEBUG) System.out.println("newChildren.size()="+newChildren.size());
                         currentChildren.ensureCapacity(newLen);
                         for(int d=0; d<newLen; d++) {
                             Node newChild = (Node)newChildren.elementAt(d);
+                            if(DEBUG) System.out.println("newChild="+newChild.getLabel()+" alertLevel="+newChild.getAlertLevel());
                             if(newChild.getAlertLevel()>=alertLevel) currentChildren.addElement(newChild);
                         }
                     }
-                }*/
+                }
 
                 // Children
                 if(DEBUG) System.out.println("currentChildren.size()="+currentChildren.size());
-                if(currentChildren.isEmpty()) {
-                    if(DEBUG) System.out.println("currentChildren is empty");
-                    children.deleteAll();
-                } else {
-                    int len = currentChildren.size();
-                    for(int c=0; c<len; c++) {
-                        Node child = (Node)currentChildren.elementAt(c);
-                        String label = child.getLabel();
-                        if(children.size()<=c) {
-                            if(DEBUG) System.out.println("Adding child: "+label);
-                            children.append(label, getAlertImage(child.getAlertLevel()));
-                        } else /*if(!children.getString(c).equals(label))*/ {
-                            if(DEBUG) System.out.println("Updating child: "+label);
-                            children.set(c, label, getAlertImage(child.getAlertLevel()));
-                        }
-                        children.setSelectedIndex(c, false);
+                int len = currentChildren.size();
+                for(int c=0; c<len; c++) {
+                    Node child = (Node)currentChildren.elementAt(c);
+                    String label = child.getLabel();
+                    Image alertImage = getAlertImage(child.getAlertLevel());
+                    String[] newPath;
+                    if(currentNodePath==null) {
+                        newPath = new String[1];
+                        newPath[0] = label;
+                    } else {
+                        int cnpLen = currentNodePath.length;
+                        newPath = new String[cnpLen+1];
+                        System.arraycopy(currentNodePath, 0, newPath, 0, cnpLen);
+                        newPath[cnpLen] = label;
                     }
-                    while(children.size()>len) {
-                        if(DEBUG) System.out.println("Deleting child: "+children.getString(children.size()-1));
-                        children.delete(children.size()-1);
+
+                    if(tree.size()<=treeIndex) {
+                        if(DEBUG) System.out.println("Adding child: "+label);
+                        tree.append(label, alertImage);
+                        treePaths.addElement(newPath);
+                    } else {
+                        if(!tree.getString(treeIndex).equals(label) || alertImage!=tree.getImage(treeIndex)) tree.set(treeIndex, label, alertImage);
+                        treePaths.setElementAt(newPath, treeIndex);
                     }
+                    treeIndex++;
                 }
-                if(children.size()==0) {
-                    if(form.size()>formIndex && form.get(formIndex)==children) form.delete(formIndex);
+                while(tree.size()>treeIndex) {
+                    int removeIndex = tree.size()-1;
+                    if(DEBUG) System.out.println("Deleting extra tree: "+tree.getString(removeIndex));
+                    tree.delete(removeIndex);
+                    treePaths.removeElementAt(removeIndex);
+                }
+                if(treeIndex==0) {
+                    if(form.size()>formIndex && form.get(formIndex)==tree) form.delete(formIndex);
                 } else {
-                    if(form.size()<=formIndex || form.get(formIndex)!=children) form.insert(formIndex, children);
+                    tree.setSelectedIndex(currentNodePath.length-1, true);
+                    if(form.size()<=formIndex || form.get(formIndex)!=tree) form.insert(formIndex, tree);
                     formIndex++;
                 }
 
@@ -251,9 +267,11 @@ public class Systems extends MIDlet implements UpdaterListener, CommandListener,
         }
     }
 
-    public void commandAction(Command c, Displayable d) {
-        if("Update Now".equals(c.getLabel())) updater.updateNow();
-        // TODO: Throw error on all else conditions and display all errors
+    public void commandAction(Command c, Item item) {
+        if(item==updatedDateField) {
+            if("Update Now".equals(c.getLabel())) updater.updateNow();
+            // TODO: Throw error on all else conditions and display all errors
+        }
     }
 
     private void setAlertLevel(byte alertLevel) throws IOException {
@@ -268,30 +286,11 @@ public class Systems extends MIDlet implements UpdaterListener, CommandListener,
     
     public void itemStateChanged(Item item) {
         try {
-            if(item==parents) {
-                if(DEBUG) System.out.println("parents changed");
-                // Find the first element that is not selected
-                int len = parents.size();
-                boolean[] flags = new boolean[len];
-                parents.getSelectedFlags(flags);
-                for(int c=0; c<len; c++) {
-                    if(!flags[c]) {
-                        while(path.size()>c) path.removeElementAt(path.size()-1);
-                    }
-                }
-                synchronized(updateLock) {
-                    updateForm(updater.getNodeSnapshot());
-                }
-            } else if(item==children) {
-                if(DEBUG) System.out.println("children changed");
-                int len = children.size();
-                boolean[] flags = new boolean[len];
-                children.getSelectedFlags(flags);
-                for(int c=0; c<len; c++) {
-                    if(flags[c]) {
-                        path.addElement(children.getString(c));
-                    }
-                }
+            if(item==tree) {
+                if(DEBUG) System.out.println("tree changed");
+                String[] newPath = (String[])treePaths.elementAt(tree.getSelectedIndex());
+                path.removeAllElements();
+                for(int c=0, len=newPath.length; c<len; c++) path.addElement(newPath[c]);
                 synchronized(updateLock) {
                     updateForm(updater.getNodeSnapshot());
                 }
@@ -306,6 +305,13 @@ public class Systems extends MIDlet implements UpdaterListener, CommandListener,
     }
     
     final private Image[] alertImages = new Image[AlertLevel.UNKNOWN+1];
+
+    /**
+     * Gets the alert image.
+     * 
+     * @param  indent  0, 1, or 2
+     */
+    // TODO: private Image getAlertImage(int indent, byte alertLevel, boolean allowsChildren, int numChildren) throws IOException {
     private Image getAlertImage(byte alertLevel) throws IOException {
         synchronized(alertImages) {
             Image image = alertImages[alertLevel];
