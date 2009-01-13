@@ -32,7 +32,7 @@ public class Node {
      * @param alertLevel    the current alertLevel.
      * @param alertMessage  the current alertMessage or <code>null</code> for none.
      */
-    public Node(Node parent, String label, byte alertLevel, String alertMessage, boolean allowsChildren) {
+    Node(Node parent, String label, byte alertLevel, String alertMessage, boolean allowsChildren) {
         this.parent = parent;
         this.label = label;
         this.alertLevel = alertLevel;
@@ -56,14 +56,14 @@ public class Node {
     /**
      * Gets the parent of this node or <code>null</code> if this is the root.
      */
-    public Node getParent() {
+    Node getParent() {
         return parent;
     }
     
     /**
      * Gets the unique-per-parent label for this node.
      */
-    public String getLabel() {
+    String getLabel() {
         return label;
     }
     
@@ -72,7 +72,7 @@ public class Node {
      * 
      * @see  AlertLevel
      */
-    public byte getAlertLevel() {
+    byte getAlertLevel() {
         return alertLevel;
     }
 
@@ -80,21 +80,21 @@ public class Node {
      * Gets the most recent alert message for this node or <code>null</code>
      * for none.
      */
-    public String getAlertMessage() {
+    String getAlertMessage() {
         return alertMessage;
     }
 
     /**
      * Indicates this node may have children.
      */
-    public boolean getAllowsChildren() {
+    boolean getAllowsChildren() {
         return allowsChildren;
     }
 
     /**
      * Gets the children of this node or <code>null</code> if has none.
      */
-    synchronized public Vector getChildren() {
+    synchronized Vector getChildren() {
         return children;
     }
 }

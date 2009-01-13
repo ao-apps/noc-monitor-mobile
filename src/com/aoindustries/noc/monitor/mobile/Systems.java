@@ -9,10 +9,14 @@ import java.io.IOException;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Vector;
+import javax.microedition.lcdui.Alert;
+import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.Choice;
 import javax.microedition.lcdui.ChoiceGroup;
 import javax.microedition.lcdui.Command;
+import javax.microedition.lcdui.CommandListener;
 import javax.microedition.lcdui.Display;
+import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Form;
 import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.Item;
@@ -37,7 +41,7 @@ import javax.microedition.midlet.MIDlet;
  *
  * @author  AO Industries, Inc.
  */
-public class Systems extends MIDlet implements UpdaterListener, ItemStateListener, ItemCommandListener {
+public class Systems extends MIDlet implements CommandListener, UpdaterListener, ItemStateListener, ItemCommandListener {
 
     private static final boolean DEBUG = false;
     
@@ -67,57 +71,106 @@ public class Systems extends MIDlet implements UpdaterListener, ItemStateListene
     }
 
     protected void startApp() {
-        updater.start();
-        updater.addUpdaterListener(this);
         try {
+            if(form==null) {
+                Form newForm = new Form("Systems");
+
+                // Commands
+                newForm.setCommandListener(this);
+                newForm.addCommand(new Command("Up", Command.BACK, 1));
+
+                // Items
+                newForm.setItemStateListener(this);
+
+                // Filter
+                filter = new ChoiceGroup("Filter", Choice.POPUP);
+                filter.append("All", getDotAlertImage(AlertLevel.NONE));
+                filter.append("Low", getDotAlertImage(AlertLevel.LOW));
+                filter.append("Medium", getDotAlertImage(AlertLevel.MEDIUM));
+                filter.append("High", getDotAlertImage(AlertLevel.HIGH));
+                filter.append("Critical", getDotAlertImage(AlertLevel.CRITICAL));
+                filter.setSelectedIndex(alertLevel, true);
+                //filter.setLayout(Item.LAYOUT_NEWLINE_AFTER);
+                newForm.append(filter);
+
+                updatedTimeField = new StringItem("Last Updated", "");
+                //updatedDateField.setLayout(Item.LAYOUT_NEWLINE_AFTER);
+                //updatedDateField.setLayout(Item.LAYOUT_2);
+                updatedTimeField.addCommand(new Command("Update Now", Command.SCREEN, 2));
+                updatedTimeField.setItemCommandListener(this);
+                newForm.append(updatedTimeField);
+
+                tree = new ChoiceGroup(null, Choice.EXCLUSIVE);
+                tree.setFitPolicy(Choice.TEXT_WRAP_OFF);
+
+                alertMessage = new StringItem("Alert Message", "");
+
+                Display display = Display.getDisplay(this);
+                display.setCurrent(newForm);
+                form = newForm;
+            }
+            updater.start();
+            updater.addUpdaterListener(this);
             updateForm(updater.getNodeSnapshot());
-        } catch(IOException err) {
-            err.printStackTrace();
-        }
-        synchronized(updatedTimeFieldLock) {
-            if(updatedTimeFieldThread==null) {
-                updatedTimeFieldThread = new Thread(
-                    new Runnable() {
-                        public void run() {
-                            Thread currentThread = Thread.currentThread();
-                            while(true) {
-                                try {
-                                    synchronized(updatedTimeFieldLock) {
-                                        if(currentThread!=updatedTimeFieldThread) break;
+            synchronized(updatedTimeFieldLock) {
+                if(updatedTimeFieldThread==null) {
+                    updatedTimeFieldThread = new Thread(
+                        new Runnable() {
+                            public void run() {
+                                Thread currentThread = Thread.currentThread();
+                                while(true) {
+                                    try {
+                                        synchronized(updatedTimeFieldLock) {
+                                            if(currentThread!=updatedTimeFieldThread) break;
+                                        }
+                                        updateTimeField(updater.getNodeSnapshot());
+                                    } catch(Exception err) {
+                                        alert(err);
                                     }
-                                    updateTimeField(updater.getNodeSnapshot());
-                                } catch(Exception err) {
-                                    err.printStackTrace();
-                                }
-                                try {
-                                    Thread.sleep(TIME_FIELD_UPDATE_INTERVAL);
-                                } catch(InterruptedException err) {
-                                    err.printStackTrace();
+                                    try {
+                                        Thread.sleep(TIME_FIELD_UPDATE_INTERVAL);
+                                    } catch(Exception err) {
+                                        alert(err);
+                                    }
                                 }
                             }
                         }
-                    }
-                );
-                updatedTimeFieldThread.setPriority(Thread.NORM_PRIORITY-2);
-                updatedTimeFieldThread.start();
+                    );
+                    updatedTimeFieldThread.setPriority(Thread.NORM_PRIORITY-2);
+                    updatedTimeFieldThread.start();
+                }
             }
+        } catch(Exception err) {
+            alert(err);
         }
     }
 
     protected void pauseApp() {
-        synchronized(updatedTimeFieldLock) {
-            updatedTimeFieldThread = null;
+        try {
+            synchronized(updatedTimeFieldLock) {
+                updatedTimeFieldThread = null;
+            }
+            updater.removeUpdaterListener(this);
+            // The updater will continue to run even when app is paused
+        } catch(Exception err) {
+            alert(err);
         }
-        updater.removeUpdaterListener(this);
-        // The updater will continue to run even when app is paused
     }
 
     protected void destroyApp(boolean unconditional) {
-        updater.stop();
+        try {
+            updater.stop();
+        } catch(Exception err) {
+            alert(err);
+        }
     }
     
-    public void nodesUpdated(NodeSnapshot snapshot) throws IOException {
-        updateForm(snapshot);
+    public void nodesUpdated(NodeSnapshot snapshot) {
+        try {
+            updateForm(snapshot);
+        } catch(Exception err) {
+            alert(err);
+        }
     }
 
     private static final Date formatTimeDate = new Date(0);
@@ -144,39 +197,6 @@ public class Systems extends MIDlet implements UpdaterListener, ItemStateListene
 
     private void updateForm(NodeSnapshot snapshot) throws IOException {
         synchronized(updateLock) {
-            if(form==null) {
-                Form newForm = new Form("Systems");
-                
-                // Items
-                newForm.setItemStateListener(this);
-
-                // Filter
-                filter = new ChoiceGroup("Filter", Choice.POPUP);
-                filter.append("All", getDotAlertImage(AlertLevel.NONE));
-                filter.append("Low", getDotAlertImage(AlertLevel.LOW));
-                filter.append("Medium", getDotAlertImage(AlertLevel.MEDIUM));
-                filter.append("High", getDotAlertImage(AlertLevel.HIGH));
-                filter.append("Critical", getDotAlertImage(AlertLevel.CRITICAL));
-                filter.setSelectedIndex(alertLevel, true);
-                //filter.setLayout(Item.LAYOUT_NEWLINE_AFTER);
-                newForm.append(filter);
-
-                updatedTimeField = new StringItem("Last Updated", "");
-                //updatedDateField.setLayout(Item.LAYOUT_NEWLINE_AFTER);
-                //updatedDateField.setLayout(Item.LAYOUT_2);
-                updatedTimeField.addCommand(new Command("Update Now", Command.SCREEN, 2));
-                updatedTimeField.setItemCommandListener(this);
-                newForm.append(updatedTimeField);
-                
-                tree = new ChoiceGroup(null, Choice.EXCLUSIVE);
-                tree.setFitPolicy(Choice.TEXT_WRAP_OFF);
-
-                alertMessage = new StringItem("Alert Message", "");
-
-                Display display = Display.getDisplay(this);
-                display.setCurrent(newForm);
-                form = newForm;
-            }
             updateTimeField(snapshot);
 
             int formIndex = 2;
@@ -383,10 +403,26 @@ public class Systems extends MIDlet implements UpdaterListener, ItemStateListene
         }
     }
 
+    public void commandAction(Command c, Displayable d) {
+        try {
+            if("Up".equals(c.getLabel())) {
+                if(path.size()>1) path.removeElementAt(path.size()-1);
+                updateForm(updater.getNodeSnapshot());
+            }
+        } catch(Exception err) {
+            alert(err);
+        }
+    }
+
+    
     public void commandAction(Command c, Item item) {
-        if(item==updatedTimeField) {
-            if("Update Now".equals(c.getLabel())) updater.updateNow();
-            // TODO: Throw error on all else conditions and display all errors
+        try {
+            if(item==updatedTimeField) {
+                if("Update Now".equals(c.getLabel())) updater.updateNow();
+                // TODO: Throw error on all else conditions and display all errors
+            }
+        } catch(Exception err) {
+            alert(err);
         }
     }
 
@@ -415,8 +451,8 @@ public class Systems extends MIDlet implements UpdaterListener, ItemStateListene
             } else {
                 if(DEBUG) System.out.println("Unexpected item: "+item);
             }
-        } catch(IOException err) {
-            err.printStackTrace();
+        } catch(Exception err) {
+            alert(err);
         }
     }
 
@@ -478,6 +514,23 @@ public class Systems extends MIDlet implements UpdaterListener, ItemStateListene
                 dotAlertImages[alertLevel] = dotImage;
             }
             return dotImage;
+        }
+    }
+    
+    public void alert(Exception err) {
+        try {
+            err.printStackTrace();
+            Display display = Display.getDisplay(this);
+            try {
+                display.vibrate(250);
+            } catch(Exception err2) {
+                err2.printStackTrace();
+            }
+            Alert alert = new Alert("Exception", err.toString(), null, AlertType.ERROR);
+            alert.setTimeout(Alert.FOREVER);
+            display.setCurrent(alert, form);
+        } catch(Exception err2) {
+            err2.printStackTrace();
         }
     }
 }

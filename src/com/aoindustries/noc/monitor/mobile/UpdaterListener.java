@@ -5,8 +5,6 @@
  */
 package com.aoindustries.noc.monitor.mobile;
 
-import java.io.IOException;
-
 /**
  * Notified of update events.
  *
@@ -20,5 +18,10 @@ interface UpdaterListener {
     /**
      * Called when new nodes become available.
      */
-    void nodesUpdated(NodeSnapshot snapshot) throws IOException;
+    void nodesUpdated(NodeSnapshot snapshot);
+    
+    /**
+     * Called when an exception occurs.
+     */
+    void alert(Exception err);
 }

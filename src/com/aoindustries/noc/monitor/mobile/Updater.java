@@ -64,90 +64,106 @@ class Updater implements Runnable {
         this.password = password;
     }
 
-    synchronized public void start() {
-        if(thread==null) {
-            thread = new Thread(this);
-            thread.setPriority(Thread.NORM_PRIORITY-1);
-            thread.start();
+    void start() {
+        try {
+            synchronized(this) {
+                if(thread==null) {
+                    thread = new Thread(this);
+                    thread.setPriority(Thread.NORM_PRIORITY-1);
+                    thread.start();
+                }
+            }
+        } catch(Exception err) {
+            alert(err);
         }
     }
 
-    synchronized public void stop() {
-        thread = null;
+    void stop() {
+        synchronized(this) {
+            thread = null;
+        }
     }
 
     /**
      * Causes an update of the data as soon as possible.  If an update is in progress,
      * it will not cause another update after completion.
      */
-    public void updateNow() {
-        updateNow = true;
-        synchronized(this) {
-            if(thread!=null) thread.interrupt();
+    void updateNow() {
+        try {
+            updateNow = true;
+            synchronized(this) {
+                if(thread!=null) thread.interrupt();
+            }
+        } catch(Exception err) {
+            alert(err);
         }
     }
 
     public void run() {
-        final Thread currentThread = Thread.currentThread();
-        long lastStartTime = System.currentTimeMillis();
-        while(true) {
-            try {
-                // Stop if should no longer be running
-                Thread runningThread;
-                synchronized(this) {
-                    runningThread = this.thread;
-                }
-                if(currentThread!=runningThread) break;
-                
-                // Try to retrieve latest values from a record if not yet loaded
-                if(snapshot==null) {
-                    snapshot = NodeSnapshot.getRecord();
-                    if(snapshot!=null) {
-                        if(DEBUG) {
-                            System.out.println("Got old version from record store");
-                            dumpSnapshot(snapshot);
-                        }
-                        notifyListenersNodesUpdated(snapshot);
-                    }
-                }
-
-                // Download the latest values from the noc-monitor-server
-                snapshot = downloadSnapshot();
-                if(DEBUG) {
-                    System.out.println("Got new version from server");
-                    dumpSnapshot(snapshot);
-                }
-
-                // Store the latest values as a new version of the record
-                NodeSnapshot.storeRecord(snapshot);
-                notifyListenersNodesUpdated(snapshot);
-                
-                // Wait five minutes or until interrupted
-                final long sleepUntil = lastStartTime + UPDATE_INTERVAL;
-                while(!updateNow) {
-                    long sleepLeft = sleepUntil - System.currentTimeMillis();
-                    // Sleep done or not needed
-                    if(sleepLeft<=0) break;
-                    // System time reset
-                    if(sleepLeft>UPDATE_INTERVAL) break;
-                    try {
-                        if(DEBUG) System.out.println("Updater: Sleeping for "+sleepLeft+" ms");
-                        Thread.sleep(sleepLeft);
-                    } catch(InterruptedException err) {
-                        if(updateNow) break;
-                        if(DEBUG) System.out.println("Updater: Got interrupt that was not for updateNow flag");
-                    }
-                }
-            } catch(Exception err) {
-                err.printStackTrace();
+        try {
+            final Thread currentThread = Thread.currentThread();
+            long lastStartTime = System.currentTimeMillis();
+            while(true) {
                 try {
-                    Thread.sleep(60*1000);
-                } catch(InterruptedException err2) {
-                    if(!updateNow) {
-                        if(DEBUG) System.out.println("Updater: Got interrupt that was not for updateNow flag");
+                    // Stop if should no longer be running
+                    Thread runningThread;
+                    synchronized(this) {
+                        runningThread = this.thread;
+                    }
+                    if(currentThread!=runningThread) break;
+
+                    // Try to retrieve latest values from a record if not yet loaded
+                    if(snapshot==null) {
+                        snapshot = NodeSnapshot.getRecord();
+                        if(snapshot!=null) {
+                            if(DEBUG) {
+                                System.out.println("Got old version from record store");
+                                dumpSnapshot(snapshot);
+                            }
+                            notifyListenersNodesUpdated(snapshot);
+                        }
+                    }
+
+                    // Download the latest values from the noc-monitor-server
+                    snapshot = downloadSnapshot();
+                    if(DEBUG) {
+                        System.out.println("Got new version from server");
+                        dumpSnapshot(snapshot);
+                    }
+
+                    // Store the latest values as a new version of the record
+                    NodeSnapshot.storeRecord(snapshot);
+                    notifyListenersNodesUpdated(snapshot);
+
+                    // Wait five minutes or until interrupted
+                    final long sleepUntil = lastStartTime + UPDATE_INTERVAL;
+                    while(!updateNow) {
+                        long sleepLeft = sleepUntil - System.currentTimeMillis();
+                        // Sleep done or not needed
+                        if(sleepLeft<=0) break;
+                        // System time reset
+                        if(sleepLeft>UPDATE_INTERVAL) break;
+                        try {
+                            if(DEBUG) System.out.println("Updater: Sleeping for "+sleepLeft+" ms");
+                            Thread.sleep(sleepLeft);
+                        } catch(InterruptedException err) {
+                            if(updateNow) break;
+                            if(DEBUG) System.out.println("Updater: Got interrupt that was not for updateNow flag");
+                        }
+                    }
+                } catch(Exception err) {
+                    alert(err);
+                    try {
+                        Thread.sleep(60*1000);
+                    } catch(InterruptedException err2) {
+                        if(!updateNow) {
+                            if(DEBUG) System.out.println("Updater: Got interrupt that was not for updateNow flag");
+                        }
                     }
                 }
             }
+        } catch(Exception err) {
+            alert(err);
         }
     }
 
@@ -180,7 +196,7 @@ class Updater implements Runnable {
     /**
      * Gets the current snapshot or <code>null</code> if not yet available.
      */
-    public NodeSnapshot getNodeSnapshot() {
+    NodeSnapshot getNodeSnapshot() {
         return snapshot;
     }
     
@@ -262,13 +278,13 @@ class Updater implements Runnable {
         }
     }
     
-    public void addUpdaterListener(UpdaterListener listener) {
+    void addUpdaterListener(UpdaterListener listener) {
         synchronized(listeners) {
             listeners.addElement(listener);
         }
     }
     
-    public void removeUpdaterListener(UpdaterListener listener) {
+    void removeUpdaterListener(UpdaterListener listener) {
         synchronized(listeners) {
             for(int c=listeners.size()-1;c>=0;c--) {
                 if(listeners.elementAt(c)==listener) listeners.removeElementAt(c);
@@ -281,8 +297,20 @@ class Updater implements Runnable {
             for(int c=0, len=listeners.size(); c<len; c++) {
                 try {
                     ((UpdaterListener)listeners.elementAt(c)).nodesUpdated(snapshot);
-                } catch(IOException err) {
-                    err.printStackTrace();
+                } catch(Exception err) {
+                    alert(err);
+                }
+            }
+        }
+    }
+
+    private void alert(Exception err) {
+        synchronized(listeners) {
+            for(int c=0, len=listeners.size(); c<len; c++) {
+                try {
+                    ((UpdaterListener)listeners.elementAt(c)).alert(err);
+                } catch(Exception err2) {
+                    err2.printStackTrace();
                 }
             }
         }

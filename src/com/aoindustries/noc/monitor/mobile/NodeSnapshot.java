@@ -20,7 +20,7 @@ import javax.microedition.rms.RecordStoreNotFoundException;
  * 
  * @author  AO Industries, Inc.
  */
-public class NodeSnapshot {
+class NodeSnapshot {
 
     private static final boolean DEBUG = false;
     
@@ -77,7 +77,7 @@ public class NodeSnapshot {
     /**
      * Stores the provided node tree to the record.
      */
-    public static void storeRecord(NodeSnapshot snapshot) throws IOException, RecordStoreException {
+    static void storeRecord(NodeSnapshot snapshot) throws IOException, RecordStoreException {
         synchronized(recordLock) {
             // Convert to a byte[]
             ByteArrayOutputStream bout = new ByteArrayOutputStream();
@@ -120,7 +120,7 @@ public class NodeSnapshot {
     /**
      * Gets the most recent record or <code>null</code> if unavailable.
      */
-    public static NodeSnapshot getRecord() throws IOException, RecordStoreException {
+    static NodeSnapshot getRecord() throws IOException, RecordStoreException {
         synchronized(recordLock) {
             // Fetch from the record
             try {
@@ -165,19 +165,19 @@ public class NodeSnapshot {
     final private Node rootNode;
     final private long time;
     
-    public NodeSnapshot(Node rootNode, long time) {
+    NodeSnapshot(Node rootNode, long time) {
         this.rootNode = rootNode;
         this.time = time;
     }
     
-    public Node getRootNode() {
+    Node getRootNode() {
         return rootNode;
     }
     
     /**
      * Gets the time this snapshot was retrieved.
      */
-    public long getTime() {
+    long getTime() {
         return time;
     }
 }
