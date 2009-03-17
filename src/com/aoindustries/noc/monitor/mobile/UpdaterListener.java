@@ -13,7 +13,7 @@ package com.aoindustries.noc.monitor.mobile;
  * 
  * @author  AO Industries, Inc.
  */
-interface UpdaterListener {
+public interface UpdaterListener {
     
     /**
      * Called when new nodes become available.

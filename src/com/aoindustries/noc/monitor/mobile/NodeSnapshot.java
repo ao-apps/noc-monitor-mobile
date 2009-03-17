@@ -20,10 +20,12 @@ import javax.microedition.rms.RecordStoreNotFoundException;
  * 
  * @author  AO Industries, Inc.
  */
-class NodeSnapshot {
+public class NodeSnapshot {
 
     private static final boolean DEBUG = false;
     
+    private static final boolean USE_RECORD_STORE = false;
+
     private static final String RECORD_NAME = "NodeSnapshot.cache";
 
     /**
@@ -72,47 +74,52 @@ class NodeSnapshot {
      * Caches the last record stored or retrieved.
      */
     private static NodeSnapshot lastRecord;
-    private static int lastRecordVersion = -1;
+    private static int lastRecordVersion = 0;
 
     /**
      * Stores the provided node tree to the record.
      */
     static void storeRecord(NodeSnapshot snapshot) throws IOException, RecordStoreException {
         synchronized(recordLock) {
-            // Convert to a byte[]
-            ByteArrayOutputStream bout = new ByteArrayOutputStream();
-            try {
-                DataOutputStream out = new DataOutputStream(bout);
+            if(USE_RECORD_STORE) {
+                // Convert to a byte[]
+                ByteArrayOutputStream bout = new ByteArrayOutputStream();
                 try {
-                    out.writeShort(RECORD_STORE_FORMAT_VERSION);
-                    writeNodeTree(out, snapshot.rootNode);
-                    out.writeLong(snapshot.time);
-                } finally {
-                    out.close();
-                }
-            } finally {
-                bout.close();
-            }
-            byte[] newBytes = bout.toByteArray();
-
-            // Store to the record
-            RecordStore recordStore = RecordStore.openRecordStore(RECORD_NAME, true, RecordStore.AUTHMODE_PRIVATE, true);
-            try {
-                if(recordStore.getNumRecords()==0) {
-                    if(DEBUG) System.out.println("Adding record "+RECORD_NAME+"#1 of "+newBytes.length+" bytes");
-                    int id = recordStore.addRecord(newBytes, 0, newBytes.length);
-                    if(id!=1) {
-                        recordStore.deleteRecord(id);
-                        throw new RecordStoreException("Unexpected first ID: "+id);
+                    DataOutputStream out = new DataOutputStream(bout);
+                    try {
+                        out.writeShort(RECORD_STORE_FORMAT_VERSION);
+                        writeNodeTree(out, snapshot.rootNode);
+                        out.writeLong(snapshot.time);
+                    } finally {
+                        out.close();
                     }
-                } else {
-                    if(DEBUG) System.out.println("Setting record "+RECORD_NAME+"#1 of "+newBytes.length+" bytes");
-                    recordStore.setRecord(1, newBytes, 0, newBytes.length);
+                } finally {
+                    bout.close();
                 }
+                byte[] newBytes = bout.toByteArray();
+
+                // Store to the record
+                RecordStore recordStore = RecordStore.openRecordStore(RECORD_NAME, true, RecordStore.AUTHMODE_PRIVATE, true);
+                try {
+                    if(recordStore.getNumRecords()==0) {
+                        if(DEBUG) System.out.println("Adding record "+RECORD_NAME+"#1 of "+newBytes.length+" bytes");
+                        int id = recordStore.addRecord(newBytes, 0, newBytes.length);
+                        if(id!=1) {
+                            recordStore.deleteRecord(id);
+                            throw new RecordStoreException("Unexpected first ID: "+id);
+                        }
+                    } else {
+                        if(DEBUG) System.out.println("Setting record "+RECORD_NAME+"#1 of "+newBytes.length+" bytes");
+                        recordStore.setRecord(1, newBytes, 0, newBytes.length);
+                    }
+                    lastRecord = snapshot;
+                    lastRecordVersion = recordStore.getVersion();
+                } finally {
+                    recordStore.closeRecordStore();
+                }
+            } else {
                 lastRecord = snapshot;
-                lastRecordVersion = recordStore.getVersion();
-            } finally {
-                recordStore.closeRecordStore();
+                lastRecordVersion++;
             }
         }
     }
@@ -122,42 +129,46 @@ class NodeSnapshot {
      */
     static NodeSnapshot getRecord() throws IOException, RecordStoreException {
         synchronized(recordLock) {
-            // Fetch from the record
-            try {
-                RecordStore recordStore = RecordStore.openRecordStore(RECORD_NAME, false, RecordStore.AUTHMODE_PRIVATE, false);
+            if(USE_RECORD_STORE) {
+                // Fetch from the record
                 try {
-                    // Use cache when record store hasn't changed
-                    int recordStoreVersion = recordStore.getVersion();
-                    if(lastRecord!=null && lastRecordVersion==recordStoreVersion) return lastRecord;
-
-                    if(recordStore.getNumRecords()==0) {
-                        lastRecord = null;
-                        lastRecordVersion = -1;
-                        return null;
-                    }
-                    byte[] oldBytes = recordStore.getRecord(1);
-                    if(DEBUG) System.out.println("Got previous record "+RECORD_NAME+"#1 of "+oldBytes.length+" bytes");
-                    DataInputStream in = new DataInputStream(new ByteArrayInputStream(oldBytes));
+                    RecordStore recordStore = RecordStore.openRecordStore(RECORD_NAME, false, RecordStore.AUTHMODE_PRIVATE, false);
                     try {
-                        int recordStoreFormatVersion = in.readShort();
-                        if(recordStoreFormatVersion==RECORD_STORE_FORMAT_VERSION) {
-                            lastRecordVersion = recordStoreVersion;
-                            lastRecord = new NodeSnapshot(readNodeTree(in, null), in.readLong());
-                        } else {
+                        // Use cache when record store hasn't changed
+                        int recordStoreVersion = recordStore.getVersion();
+                        if(lastRecord!=null && lastRecordVersion==recordStoreVersion) return lastRecord;
+
+                        if(recordStore.getNumRecords()==0) {
                             lastRecord = null;
                             lastRecordVersion = -1;
+                            return null;
                         }
-                        return lastRecord;
+                        byte[] oldBytes = recordStore.getRecord(1);
+                        if(DEBUG) System.out.println("Got previous record "+RECORD_NAME+"#1 of "+oldBytes.length+" bytes");
+                        DataInputStream in = new DataInputStream(new ByteArrayInputStream(oldBytes));
+                        try {
+                            int recordStoreFormatVersion = in.readShort();
+                            if(recordStoreFormatVersion==RECORD_STORE_FORMAT_VERSION) {
+                                lastRecordVersion = recordStoreVersion;
+                                lastRecord = new NodeSnapshot(readNodeTree(in, null), in.readLong());
+                            } else {
+                                lastRecord = null;
+                                lastRecordVersion = -1;
+                            }
+                            return lastRecord;
+                        } finally {
+                            in.close();
+                        }
                     } finally {
-                        in.close();
+                        recordStore.closeRecordStore();
                     }
-                } finally {
-                    recordStore.closeRecordStore();
+                } catch(RecordStoreNotFoundException err) {
+                    lastRecord = null;
+                    lastRecordVersion = -1;
+                    return null;
                 }
-            } catch(RecordStoreNotFoundException err) {
-                lastRecord = null;
-                lastRecordVersion = -1;
-                return null;
+            } else {
+                return lastRecord;
             }
         }
     }

@@ -38,7 +38,8 @@ import javax.microedition.midlet.MIDlet;
  *     Use record to remember last alert level filter
  *     Report warnings on all else conditions or unexpected conditions/states
  * 
- * TODO: buzz when there is a new critical alert
+ * TODO: buzz when there is a new critical alert, remove alert if it does away
+ * TODO: how to detect if on the phone?
  *
  * @author  AO Industries, Inc.
  */
@@ -53,6 +54,7 @@ public class Systems extends MIDlet implements UpdaterListener, ItemStateListene
 
     //private Form errorScreen;
 
+    private transient boolean isPaused;
     private Form form;
 
     private final Object updatedTimeFieldLock = new Object();
@@ -73,6 +75,7 @@ public class Systems extends MIDlet implements UpdaterListener, ItemStateListene
 
     protected void startApp() {
         try {
+            isPaused = false;
             if(form==null) {
                 Form newForm = new Form("Systems");
 
@@ -100,7 +103,7 @@ public class Systems extends MIDlet implements UpdaterListener, ItemStateListene
                 tree = new ChoiceGroup(null, Choice.EXCLUSIVE);
                 tree.setFitPolicy(Choice.TEXT_WRAP_OFF);
 
-                alertMessage = new StringItem("Alert Message", "");
+                alertMessage = new StringItem(null, "");
 
                 Display display = Display.getDisplay(this);
                 display.setCurrent(newForm);
@@ -144,6 +147,7 @@ public class Systems extends MIDlet implements UpdaterListener, ItemStateListene
 
     protected void pauseApp() {
         try {
+            isPaused = true;
             synchronized(updatedTimeFieldLock) {
                 updatedTimeFieldThread = null;
             }
@@ -503,18 +507,86 @@ public class Systems extends MIDlet implements UpdaterListener, ItemStateListene
     
     public void alert(Exception err) {
         try {
+            if(isPaused) resumeRequest();
             err.printStackTrace();
             Display display = Display.getDisplay(this);
-            try {
-                display.vibrate(250);
-            } catch(Exception err2) {
-                err2.printStackTrace();
-            }
+            vibrate(display);
             Alert alert = new Alert("Exception", err.toString(), null, AlertType.ERROR);
             alert.setTimeout(Alert.FOREVER);
             display.setCurrent(alert, form);
         } catch(Exception err2) {
             err2.printStackTrace();
         }
+    }
+    
+    /**
+     * Vibrates if it is not currently Dan's school hours.
+     */
+    private void vibrate(Display display) {
+        try {
+            // Check schedule
+            if(!isClasstime()) display.vibrate(250);
+        } catch(Exception err) {
+            // This is called by the alert method so alerting on exception could
+            // cause infinite recursion
+            err.printStackTrace();
+        }
+    }
+    
+    /**
+     * Determines if it is currently classtime.
+     */
+    private static boolean isClasstime() {
+        Calendar cal = Calendar.getInstance();
+        int hour = cal.get(Calendar.HOUR_OF_DAY);
+        int minute = cal.get(Calendar.MINUTE);
+        int dayOfWeek = cal.get(Calendar.DAY_OF_WEEK);
+        return
+            // PH201, MTWF 10:10-11:00 +- 5 minutes
+            (
+                (
+                    dayOfWeek==Calendar.MONDAY
+                    || dayOfWeek==Calendar.TUESDAY
+                    || dayOfWeek==Calendar.WEDNESDAY
+                    || dayOfWeek==Calendar.FRIDAY
+                ) && (
+                       (hour==10 && minute>= 5)
+                    || (hour==11 && minute<= 5)
+                )
+            )
+            // PH201L, T 11:10-14:00 +- 5 minutes
+            || (
+                (
+                    dayOfWeek==Calendar.TUESDAY
+                ) && (
+                       (hour==11 && minute>= 5)
+                    ||  hour==12
+                    ||  hour==13
+                    || (hour==14 && minute<= 5)
+                )
+            )
+            // CSC333, MWF 11:15-12:05 +- 5 minutes
+            || (
+                (
+                    dayOfWeek==Calendar.MONDAY
+                    || dayOfWeek==Calendar.WEDNESDAY
+                    || dayOfWeek==Calendar.FRIDAY
+                ) && (
+                       (hour==11 && minute>=10)
+                    || (hour==12 && minute<=10)
+                )
+            )
+            // CIS439, MWF 12:20-13:10 +- 5 minutes
+            || (
+                (
+                    dayOfWeek==Calendar.MONDAY
+                    || dayOfWeek==Calendar.WEDNESDAY
+                    || dayOfWeek==Calendar.FRIDAY
+                ) && (
+                       (hour==12 && minute>=15)
+                    || (hour==13 && minute<=15)
+                )
+            )
+        ;
     }
 }

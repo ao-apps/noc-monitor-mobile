@@ -5,6 +5,7 @@
  */
 package com.aoindustries.noc.monitor.mobile;
 
+import com.tinyline.util.GZIPInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -102,8 +103,8 @@ class Updater implements Runnable {
     public void run() {
         try {
             final Thread currentThread = Thread.currentThread();
-            long lastStartTime = System.currentTimeMillis();
             while(true) {
+                long lastStartTime = System.currentTimeMillis();
                 try {
                     // Stop if should no longer be running
                     Thread runningThread;
@@ -223,7 +224,7 @@ class Updater implements Runnable {
                                     out.writeUTF(username);
                                     out.writeUTF(password);
                                     out.flush();
-                                    DataInputStream in = conn.openDataInputStream();
+                                    DataInputStream in = new DataInputStream(new GZIPInputStream(conn.openInputStream()));
                                     try {
                                         if(!in.readBoolean()) {
                                             // Login unsuccessful
