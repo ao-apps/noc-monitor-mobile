@@ -27,7 +27,7 @@ class Updater implements Runnable {
     /**
      * Enabled/disabled debugging output.
      */
-    private static final boolean DEBUG = false;
+    private static final boolean DEBUG = true;
 
     /**
      * The server that will be contacted for the updates.
