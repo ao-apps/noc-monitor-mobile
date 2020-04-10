@@ -1,5 +1,5 @@
 /*
- * Copyright 2009-2012 by AO Industries, Inc.,
+ * Copyright 2009-2012, 2020 by AO Industries, Inc.,
  * 7262 Bull Pen Cir, Mobile, Alabama, 36695, U.S.A.
  * All rights reserved.
  */
@@ -24,296 +24,296 @@ import javax.microedition.io.SecureConnection;
  */
 class Updater implements Runnable {
 
-    /**
-     * Enabled/disabled debugging output.
-     */
-    private static final boolean DEBUG = false;
+	/**
+	 * Enabled/disabled debugging output.
+	 */
+	private static final boolean DEBUG = false;
 
-    /**
-     * The server that will be contacted for the updates.
-     */
-    private static final String HOST = "monitor.aoindustries.com";
+	/**
+	 * The server that will be contacted for the updates.
+	 */
+	private static final String HOST = "monitor.aoindustries.com";
 
-    /**
-     * The port that will be contacted for the updates.
-     */
-    private static final int PORT = 4585;
+	/**
+	 * The port that will be contacted for the updates.
+	 */
+	private static final int PORT = 4585;
 
-    /**
-     * The number of milliseconds between updates.
-     */
-    private static final long UPDATE_INTERVAL = 5*60*1000;
-    
-    /**
-     * The time-out duration.
-     */
-    private static final long TIMEOUT_DURATION = 5*60*1000;
+	/**
+	 * The number of milliseconds between updates.
+	 */
+	private static final long UPDATE_INTERVAL = 5*60*1000;
 
-    final private String username;
-    final private String password;
+	/**
+	 * The time-out duration.
+	 */
+	private static final long TIMEOUT_DURATION = 5*60*1000;
 
-    private Thread thread;
-    
-    transient private boolean updateNow;
-    transient private NodeSnapshot snapshot;
+	final private String username;
+	final private String password;
 
-    // Could possibly change this to a single value if no more than one is ever added
-    final private Vector listeners = new Vector();
+	private Thread thread;
 
-    public Updater(String username, String password) {
-        this.username = username;
-        this.password = password;
-    }
+	transient private boolean updateNow;
+	transient private NodeSnapshot snapshot;
 
-    void start() {
-        try {
-            synchronized(this) {
-                if(thread==null) {
-                    thread = new Thread(this);
-                    thread.setPriority(Thread.NORM_PRIORITY-1);
-                    thread.start();
-                }
-            }
-        } catch(Exception err) {
-            alert(err);
-        }
-    }
+	// Could possibly change this to a single value if no more than one is ever added
+	final private Vector listeners = new Vector();
 
-    void stop() {
-        synchronized(this) {
-            thread = null;
-        }
-    }
+	public Updater(String username, String password) {
+		this.username = username;
+		this.password = password;
+	}
 
-    /**
-     * Causes an update of the data as soon as possible.  If an update is in progress,
-     * it will not cause another update after completion.
-     */
-    void updateNow() {
-        try {
-            updateNow = true;
-            synchronized(this) {
-                if(thread!=null) thread.interrupt();
-            }
-        } catch(Exception err) {
-            alert(err);
-        }
-    }
+	void start() {
+		try {
+			synchronized(this) {
+				if(thread==null) {
+					thread = new Thread(this);
+					thread.setPriority(Thread.NORM_PRIORITY-1);
+					thread.start();
+				}
+			}
+		} catch(Exception err) {
+			alert(err);
+		}
+	}
 
-    public void run() {
-        try {
-            final Thread currentThread = Thread.currentThread();
-            while(true) {
-                long lastStartTime = System.currentTimeMillis();
-                try {
-                    // Stop if should no longer be running
-                    Thread runningThread;
-                    synchronized(this) {
-                        runningThread = this.thread;
-                    }
-                    if(currentThread!=runningThread) break;
+	void stop() {
+		synchronized(this) {
+			thread = null;
+		}
+	}
 
-                    // Try to retrieve latest values from a record if not yet loaded
-                    if(snapshot==null) {
-                        snapshot = NodeSnapshot.getRecord();
-                        if(snapshot!=null) {
-                            if(DEBUG) {
-                                System.out.println("Got old version from record store");
-                                dumpSnapshot(snapshot);
-                            }
-                            notifyListenersNodesUpdated(snapshot);
-                        }
-                    }
+	/**
+	 * Causes an update of the data as soon as possible.  If an update is in progress,
+	 * it will not cause another update after completion.
+	 */
+	void updateNow() {
+		try {
+			updateNow = true;
+			synchronized(this) {
+				if(thread!=null) thread.interrupt();
+			}
+		} catch(Exception err) {
+			alert(err);
+		}
+	}
 
-                    // Download the latest values from the noc-monitor-server
-                    snapshot = downloadSnapshot();
-                    if(DEBUG) {
-                        System.out.println("Got new version from server");
-                        dumpSnapshot(snapshot);
-                    }
+	public void run() {
+		try {
+			final Thread currentThread = Thread.currentThread();
+			while(true) {
+				long lastStartTime = System.currentTimeMillis();
+				try {
+					// Stop if should no longer be running
+					Thread runningThread;
+					synchronized(this) {
+						runningThread = this.thread;
+					}
+					if(currentThread!=runningThread) break;
 
-                    // Store the latest values as a new version of the record
-                    NodeSnapshot.storeRecord(snapshot);
-                    notifyListenersNodesUpdated(snapshot);
+					// Try to retrieve latest values from a record if not yet loaded
+					if(snapshot==null) {
+						snapshot = NodeSnapshot.getRecord();
+						if(snapshot!=null) {
+							if(DEBUG) {
+								System.out.println("Got old version from record store");
+								dumpSnapshot(snapshot);
+							}
+							notifyListenersNodesUpdated(snapshot);
+						}
+					}
 
-                    // Wait five minutes or until interrupted
-                    final long sleepUntil = lastStartTime + UPDATE_INTERVAL;
-                    while(!updateNow) {
-                        long sleepLeft = sleepUntil - System.currentTimeMillis();
-                        // Sleep done or not needed
-                        if(sleepLeft<=0) break;
-                        // System time reset
-                        if(sleepLeft>UPDATE_INTERVAL) break;
-                        try {
-                            if(DEBUG) System.out.println("Updater: Sleeping for "+sleepLeft+" ms");
-                            Thread.sleep(sleepLeft);
-                        } catch(InterruptedException err) {
-                            if(updateNow) break;
-                            if(DEBUG) System.out.println("Updater: Got interrupt that was not for updateNow flag");
-                        }
-                    }
-                } catch(Exception err) {
-                    alert(err);
-                    try {
-                        Thread.sleep(60*1000);
-                    } catch(InterruptedException err2) {
-                        if(!updateNow) {
-                            if(DEBUG) System.out.println("Updater: Got interrupt that was not for updateNow flag");
-                        }
-                    }
-                }
-            }
-        } catch(Exception err) {
-            alert(err);
-        }
-    }
+					// Download the latest values from the noc-monitor-server
+					snapshot = downloadSnapshot();
+					if(DEBUG) {
+						System.out.println("Got new version from server");
+						dumpSnapshot(snapshot);
+					}
 
-    private static void dumpSnapshot(NodeSnapshot snapshot) {
-        System.out.print("Snapshot at ");
-        System.out.println(new Date(snapshot.getTime()));
-        dumpTree(0, snapshot.getRootNode());
-    }
+					// Store the latest values as a new version of the record
+					NodeSnapshot.storeRecord(snapshot);
+					notifyListenersNodesUpdated(snapshot);
 
-    private static void dumpTree(int indent, Node node) {
-        for(int c=0;c<indent;c++) {
-            System.out.print("    ");
-        }
-        System.out.print(node.getLabel());
-        System.out.print(' ');
-        System.out.print(AlertLevel.getDisplay(node.getAlertLevel()));
-        String alertMessage = node.getAlertMessage();
-        if(alertMessage!=null) {
-            System.out.print(" \"");
-            System.out.print(alertMessage);
-            System.out.print('"');
-        }
-        System.out.println();
-        Vector children = node.getChildren();
-        if(children!=null) {
-            for(int c=0, len=children.size(); c<len; c++) dumpTree(indent+1, (Node)children.elementAt(c));
-        }
-    }
+					// Wait five minutes or until interrupted
+					final long sleepUntil = lastStartTime + UPDATE_INTERVAL;
+					while(!updateNow) {
+						long sleepLeft = sleepUntil - System.currentTimeMillis();
+						// Sleep done or not needed
+						if(sleepLeft<=0) break;
+						// System time reset
+						if(sleepLeft>UPDATE_INTERVAL) break;
+						try {
+							if(DEBUG) System.out.println("Updater: Sleeping for "+sleepLeft+" ms");
+							Thread.sleep(sleepLeft);
+						} catch(InterruptedException err) {
+							if(updateNow) break;
+							if(DEBUG) System.out.println("Updater: Got interrupt that was not for updateNow flag");
+						}
+					}
+				} catch(Exception err) {
+					alert(err);
+					try {
+						Thread.sleep(60*1000);
+					} catch(InterruptedException err2) {
+						if(!updateNow) {
+							if(DEBUG) System.out.println("Updater: Got interrupt that was not for updateNow flag");
+						}
+					}
+				}
+			}
+		} catch(Exception err) {
+			alert(err);
+		}
+	}
 
-    /**
-     * Gets the current snapshot or <code>null</code> if not yet available.
-     */
-    NodeSnapshot getNodeSnapshot() {
-        return snapshot;
-    }
-    
-    /**
-     * Downloads a snapshot of the current values in a background Thread.
-     * Will time-out at five minutes.
-     */
-    private NodeSnapshot downloadSnapshot() throws IOException {
-        try {
-            final long time = System.currentTimeMillis();
-            final NodeSnapshot[] result = new NodeSnapshot[1];
-            final IOException[] ioException = new IOException[1];
-            final Thread outerThread = Thread.currentThread();
-            Thread loaderThread = new Thread(
-                new Runnable() {
-                    public void run() {
-                        try {
-                            NodeSnapshot newSnapshot;
-                            // Load the full tree
-                            SecureConnection conn = (SecureConnection)Connector.open("ssl://"+HOST+":"+PORT, Connector.READ_WRITE, true);
-                            try {
-                                DataOutputStream out = conn.openDataOutputStream();
-                                try {
-                                    out.writeUTF(username);
-                                    out.writeUTF(password);
-                                    out.flush();
-                                    DataInputStream in = new DataInputStream(new GZIPInputStream(conn.openInputStream()));
-                                    try {
-                                        if(!in.readBoolean()) {
-                                            // Login unsuccessful
-                                            throw new IOException("Login failed");
-                                        }
-                                        newSnapshot = new NodeSnapshot(NodeSnapshot.readNodeTree(in, null), time);
-                                    } finally {
-                                        in.close();
-                                    }
-                                } finally {
-                                    out.close();
-                                }
-                            } finally {
-                                conn.close();
-                            }
-                            // Set the result
-                            synchronized(result) {
-                                result[0] = newSnapshot;
-                            }
-                            // Interrupt the thread that is waiting for the result
-                            outerThread.interrupt();
-                        } catch(IOException err) {
-                            synchronized(ioException) {
-                                ioException[0] = err;
-                                outerThread.interrupt();
-                            }
-                        }
-                    }
-                }
-            );
-            loaderThread.start();
-            long startTime = System.currentTimeMillis();
-            while(true) {
-                synchronized(result) {
-                    NodeSnapshot res = result[0];
-                    if(res!=null) return res;
-                }
-                synchronized(ioException) {
-                    IOException err = ioException[0];
-                    if(err!=null) throw err;
-                }
-                long timeLeft = startTime + TIMEOUT_DURATION - System.currentTimeMillis();
-                if(timeLeft<=0) throw new InterruptedIOException("Time-out retrieving systems node tree");
-                try {
-                    Thread.sleep(timeLeft);
-                } catch(InterruptedException err) {
-                    // This is expected
-                }
-            }
-        } finally {
-            updateNow = false;
-        }
-    }
-    
-    void addUpdaterListener(UpdaterListener listener) {
-        synchronized(listeners) {
-            listeners.addElement(listener);
-        }
-    }
-    
-    void removeUpdaterListener(UpdaterListener listener) {
-        synchronized(listeners) {
-            for(int c=listeners.size()-1;c>=0;c--) {
-                if(listeners.elementAt(c)==listener) listeners.removeElementAt(c);
-            }
-        }
-    }
-    
-    private void notifyListenersNodesUpdated(NodeSnapshot snapshot) {
-        synchronized(listeners) {
-            for(int c=0, len=listeners.size(); c<len; c++) {
-                try {
-                    ((UpdaterListener)listeners.elementAt(c)).nodesUpdated(snapshot);
-                } catch(Exception err) {
-                    alert(err);
-                }
-            }
-        }
-    }
+	private static void dumpSnapshot(NodeSnapshot snapshot) {
+		System.out.print("Snapshot at ");
+		System.out.println(new Date(snapshot.getTime()));
+		dumpTree(0, snapshot.getRootNode());
+	}
 
-    private void alert(Exception err) {
-        synchronized(listeners) {
-            for(int c=0, len=listeners.size(); c<len; c++) {
-                try {
-                    ((UpdaterListener)listeners.elementAt(c)).alert(err);
-                } catch(Exception err2) {
-                    err2.printStackTrace();
-                }
-            }
-        }
-    }
+	private static void dumpTree(int indent, Node node) {
+		for(int c=0;c<indent;c++) {
+			System.out.print("    ");
+		}
+		System.out.print(node.getLabel());
+		System.out.print(' ');
+		System.out.print(AlertLevel.getDisplay(node.getAlertLevel()));
+		String alertMessage = node.getAlertMessage();
+		if(alertMessage!=null) {
+			System.out.print(" \"");
+			System.out.print(alertMessage);
+			System.out.print('"');
+		}
+		System.out.println();
+		Vector children = node.getChildren();
+		if(children!=null) {
+			for(int c=0, len=children.size(); c<len; c++) dumpTree(indent+1, (Node)children.elementAt(c));
+		}
+	}
+
+	/**
+	 * Gets the current snapshot or <code>null</code> if not yet available.
+	 */
+	NodeSnapshot getNodeSnapshot() {
+		return snapshot;
+	}
+
+	/**
+	 * Downloads a snapshot of the current values in a background Thread.
+	 * Will time-out at five minutes.
+	 */
+	private NodeSnapshot downloadSnapshot() throws IOException {
+		try {
+			final long time = System.currentTimeMillis();
+			final NodeSnapshot[] result = new NodeSnapshot[1];
+			final IOException[] ioException = new IOException[1];
+			final Thread outerThread = Thread.currentThread();
+			Thread loaderThread = new Thread(
+				new Runnable() {
+					public void run() {
+						try {
+							NodeSnapshot newSnapshot;
+							// Load the full tree
+							SecureConnection conn = (SecureConnection)Connector.open("ssl://"+HOST+":"+PORT, Connector.READ_WRITE, true);
+							try {
+								DataOutputStream out = conn.openDataOutputStream();
+								try {
+									out.writeUTF(username);
+									out.writeUTF(password);
+									out.flush();
+									DataInputStream in = new DataInputStream(new GZIPInputStream(conn.openInputStream()));
+									try {
+										if(!in.readBoolean()) {
+											// Login unsuccessful
+											throw new IOException("Login failed");
+										}
+										newSnapshot = new NodeSnapshot(NodeSnapshot.readNodeTree(in, null), time);
+									} finally {
+										in.close();
+									}
+								} finally {
+									out.close();
+								}
+							} finally {
+								conn.close();
+							}
+							// Set the result
+							synchronized(result) {
+								result[0] = newSnapshot;
+							}
+							// Interrupt the thread that is waiting for the result
+							outerThread.interrupt();
+						} catch(IOException err) {
+							synchronized(ioException) {
+								ioException[0] = err;
+								outerThread.interrupt();
+							}
+						}
+					}
+				}
+			);
+			loaderThread.start();
+			long startTime = System.currentTimeMillis();
+			while(true) {
+				synchronized(result) {
+					NodeSnapshot res = result[0];
+					if(res!=null) return res;
+				}
+				synchronized(ioException) {
+					IOException err = ioException[0];
+					if(err!=null) throw err;
+				}
+				long timeLeft = startTime + TIMEOUT_DURATION - System.currentTimeMillis();
+				if(timeLeft<=0) throw new InterruptedIOException("Time-out retrieving systems node tree");
+				try {
+					Thread.sleep(timeLeft);
+				} catch(InterruptedException err) {
+					// This is expected
+				}
+			}
+		} finally {
+			updateNow = false;
+		}
+	}
+
+	void addUpdaterListener(UpdaterListener listener) {
+		synchronized(listeners) {
+			listeners.addElement(listener);
+		}
+	}
+
+	void removeUpdaterListener(UpdaterListener listener) {
+		synchronized(listeners) {
+			for(int c=listeners.size()-1;c>=0;c--) {
+				if(listeners.elementAt(c)==listener) listeners.removeElementAt(c);
+			}
+		}
+	}
+
+	private void notifyListenersNodesUpdated(NodeSnapshot snapshot) {
+		synchronized(listeners) {
+			for(int c=0, len=listeners.size(); c<len; c++) {
+				try {
+					((UpdaterListener)listeners.elementAt(c)).nodesUpdated(snapshot);
+				} catch(Exception err) {
+					alert(err);
+				}
+			}
+		}
+	}
+
+	private void alert(Exception err) {
+		synchronized(listeners) {
+			for(int c=0, len=listeners.size(); c<len; c++) {
+				try {
+					((UpdaterListener)listeners.elementAt(c)).alert(err);
+				} catch(Exception err2) {
+					err2.printStackTrace();
+				}
+			}
+		}
+	}
 }

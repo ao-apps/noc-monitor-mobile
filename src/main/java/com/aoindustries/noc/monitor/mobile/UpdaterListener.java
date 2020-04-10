@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 by AO Industries, Inc.,
+ * Copyright 2009, 2020 by AO Industries, Inc.,
  * 7262 Bull Pen Cir, Mobile, Alabama, 36695, U.S.A.
  * All rights reserved.
  */
@@ -14,14 +14,14 @@ package com.aoindustries.noc.monitor.mobile;
  * @author  AO Industries, Inc.
  */
 public interface UpdaterListener {
-    
-    /**
-     * Called when new nodes become available.
-     */
-    void nodesUpdated(NodeSnapshot snapshot);
-    
-    /**
-     * Called when an exception occurs.
-     */
-    void alert(Exception err);
+
+	/**
+	 * Called when new nodes become available.
+	 */
+	void nodesUpdated(NodeSnapshot snapshot);
+
+	/**
+	 * Called when an exception occurs.
+	 */
+	void alert(Exception err);
 }
