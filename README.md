@@ -21,8 +21,8 @@
 Java ME Interface for [Network Operations Center Monitoring](https://github.com/aoindustries/noc-monitor).
 
 ## Project Links
-* [Project Home](https://aoindustries.com/noc-monitor-mobile/)
-* [Changelog](https://aoindustries.com/noc-monitor-mobile/changelog)
+* [Project Home](https://aoindustries.com/noc/monitor/mobile/)
+* [Changelog](https://aoindustries.com/noc/monitor/mobile/changelog)
 * [GitHub](https://github.com/aoindustries/noc-monitor-mobile)
 
 ## Related Projects
