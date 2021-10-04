@@ -1,6 +1,6 @@
 /*
  * noc-monitor-mobile - Java ME Interface for Network Operations Center Monitoring.
- * Copyright (C) 2009-2012, 2020  AO Industries, Inc.
+ * Copyright (C) 2009-2012, 2020, 2021  AO Industries, Inc.
  *     support@aoindustries.com
  *     7262 Bull Pen Cir
  *     Mobile, AL 36695
@@ -66,16 +66,16 @@ class Updater implements Runnable {
 	 */
 	private static final long TIMEOUT_DURATION = 5*60*1000;
 
-	final private String username;
-	final private String password;
+	private final String username;
+	private final String password;
 
 	private Thread thread;
 
-	transient private boolean updateNow;
-	transient private NodeSnapshot snapshot;
+	private transient boolean updateNow;
+	private transient NodeSnapshot snapshot;
 
 	// Could possibly change this to a single value if no more than one is ever added
-	final private Vector listeners = new Vector();
+	private final Vector listeners = new Vector();
 
 	public Updater(String username, String password) {
 		this.username = username;

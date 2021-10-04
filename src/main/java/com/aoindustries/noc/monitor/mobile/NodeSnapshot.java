@@ -1,6 +1,6 @@
 /*
  * noc-monitor-mobile - Java ME Interface for Network Operations Center Monitoring.
- * Copyright (C) 2008, 2009, 2020  AO Industries, Inc.
+ * Copyright (C) 2008, 2009, 2020, 2021  AO Industries, Inc.
  *     support@aoindustries.com
  *     7262 Bull Pen Cir
  *     Mobile, AL 36695
@@ -34,7 +34,7 @@ import javax.microedition.rms.RecordStoreNotFoundException;
 
 /**
  * Contains a root node and timestamp.
- * 
+ *
  * @author  AO Industries, Inc.
  */
 public class NodeSnapshot {
@@ -190,8 +190,8 @@ public class NodeSnapshot {
 		}
 	}
 
-	final private Node rootNode;
-	final private long time;
+	private final Node rootNode;
+	private final long time;
 
 	NodeSnapshot(Node rootNode, long time) {
 		this.rootNode = rootNode;

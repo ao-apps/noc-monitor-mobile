@@ -1,6 +1,6 @@
 /*
  * noc-monitor-mobile - Java ME Interface for Network Operations Center Monitoring.
- * Copyright (C) 2009, 2020  AO Industries, Inc.
+ * Copyright (C) 2009, 2020, 2021  AO Industries, Inc.
  *     support@aoindustries.com
  *     7262 Bull Pen Cir
  *     Mobile, AL 36695
@@ -44,7 +44,7 @@ import javax.microedition.midlet.MIDlet;
  * Once every 5 minutes, downloads a snapshot of the entire systems state tree.
  * This includes only the node hierarchy, including names, alert levels, and alert messages.
  * This does not include the node details.  Node details are retrieved on demand.
- * 
+ *
  * All retrievals will be handled by a single background thread.  However, if that
  * thread times-out it will be stopped and a new thread will be created in its place.
  *
@@ -54,7 +54,7 @@ import javax.microedition.midlet.MIDlet;
  * Possible improvements:
  *     Use record to remember last alert level filter
  *     Report warnings on all else conditions or unexpected conditions/states
- * 
+ *
  * TODO: buzz when there is a new critical alert, remove alert if it does away
  * TODO: how to detect if on the phone?
  *
@@ -476,9 +476,9 @@ public class Systems extends MIDlet implements UpdaterListener, ItemStateListene
 		}
 	}
 
-	final private Image[] fileImages = new Image[AlertLevel.UNKNOWN+1];
-	final private Image[] folderImages = new Image[AlertLevel.UNKNOWN+1];
-	final private Image[] folderPlusImages = new Image[AlertLevel.UNKNOWN+1];
+	private final Image[] fileImages = new Image[AlertLevel.UNKNOWN+1];
+	private final Image[] folderImages = new Image[AlertLevel.UNKNOWN+1];
+	private final Image[] folderPlusImages = new Image[AlertLevel.UNKNOWN+1];
 
 	/**
 	 * Gets the alert image.
@@ -510,7 +510,7 @@ public class Systems extends MIDlet implements UpdaterListener, ItemStateListene
 		}
 	}
 
-	final private Image[] dotAlertImages = new Image[AlertLevel.UNKNOWN+1];
+	private final Image[] dotAlertImages = new Image[AlertLevel.UNKNOWN+1];
 	private Image getDotAlertImage(byte alertLevel) throws IOException {
 		synchronized(dotAlertImages) {
 			Image dotImage = dotAlertImages[alertLevel];
