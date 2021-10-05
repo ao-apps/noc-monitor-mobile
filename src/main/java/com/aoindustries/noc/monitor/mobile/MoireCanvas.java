@@ -1,6 +1,6 @@
 /*
  * noc-monitor-mobile - Java ME Interface for Network Operations Center Monitoring.
- * Copyright (C) 2008, 2009, 2020  AO Industries, Inc.
+ * Copyright (C) 2008, 2009, 2020, 2021  AO Industries, Inc.
  *     support@aoindustries.com
  *     7262 Bull Pen Cir
  *     Mobile, AL 36695
@@ -131,7 +131,7 @@ public class MoireCanvas extends GameCanvas implements Runnable {
 		long time=System.currentTimeMillis();
 			// Clear background
 			g.setColor(background);
-			g.fillRect(0,0,width,height);
+			g.fillRect(0, 0, width, height);
 			// Draw lines
 			int start;
 			int end;
@@ -155,11 +155,11 @@ public class MoireCanvas extends GameCanvas implements Runnable {
 			}
 			// Scroll up data
 			int t;
-			System.arraycopy(x1,0,x1,1,t=LINES-1);
-			System.arraycopy(y1,0,y1,1,t);
-			System.arraycopy(x2,0,x2,1,t);
-			System.arraycopy(y2,0,y2,1,t);
-			System.arraycopy(line_colors,0,line_colors,1,t);
+			System.arraycopy(x1, 0, x1, 1, t=LINES-1);
+			System.arraycopy(y1, 0, y1, 1, t);
+			System.arraycopy(x2, 0, x2, 1, t);
+			System.arraycopy(y2, 0, y2, 1, t);
+			System.arraycopy(line_colors, 0, line_colors, 1, t);
 
 			// Move points
 			c=x1[0]+dx1*sx1;
