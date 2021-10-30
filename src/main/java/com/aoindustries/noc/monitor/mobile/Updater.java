@@ -110,7 +110,7 @@ class Updater implements Runnable {
 		try {
 			updateNow = true;
 			synchronized(this) {
-				if(thread!=null) thread.interrupt();
+				if(thread!=null) thread.interrupt(); // TODO: Use wait/notify instead of interrupt
 			}
 		} catch(Exception err) {
 			alert(err);
@@ -262,11 +262,11 @@ class Updater implements Runnable {
 								result[0] = newSnapshot;
 							}
 							// Interrupt the thread that is waiting for the result
-							outerThread.interrupt();
+							outerThread.interrupt(); // TODO: Use wait/notify instead of interrupt
 						} catch(IOException err) {
 							synchronized(ioException) {
 								ioException[0] = err;
-								outerThread.interrupt();
+								outerThread.interrupt(); // TODO: Use wait/notify instead of interrupt
 							}
 						}
 					}

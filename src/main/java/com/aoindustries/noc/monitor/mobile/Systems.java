@@ -135,7 +135,7 @@ public class Systems extends MIDlet implements UpdaterListener, ItemStateListene
 						new Runnable() {
 							public void run() {
 								Thread currentThread = Thread.currentThread();
-								while(true) {
+								while(!currentThread.isInterrupted()) {
 									try {
 										synchronized(updatedTimeFieldLock) {
 											if(currentThread!=updatedTimeFieldThread) break;
@@ -146,6 +146,9 @@ public class Systems extends MIDlet implements UpdaterListener, ItemStateListene
 									}
 									try {
 										Thread.sleep(TIME_FIELD_UPDATE_INTERVAL);
+									} catch(InterruptedException err) {
+										// Restore the interrupted status
+										Thread.currentThread().interrupt();
 									} catch(Exception err) {
 										alert(err);
 									}
