@@ -59,12 +59,12 @@ class Updater implements Runnable {
 	/**
 	 * The number of milliseconds between updates.
 	 */
-	private static final long UPDATE_INTERVAL = 5*60*1000;
+	private static final long UPDATE_INTERVAL = 5L * 60 * 1000;
 
 	/**
 	 * The time-out duration.
 	 */
-	private static final long TIMEOUT_DURATION = 5*60*1000;
+	private static final long TIMEOUT_DURATION = 5L * 60 * 1000;
 
 	private final String username;
 	private final String password;
@@ -172,7 +172,7 @@ class Updater implements Runnable {
 				} catch(Exception err) {
 					alert(err);
 					try {
-						Thread.sleep(60*1000);
+						Thread.sleep(60L * 1000);
 					} catch(InterruptedException err2) {
 						if(!updateNow) {
 							if(DEBUG) System.out.println("Updater: Got interrupt that was not for updateNow flag");
