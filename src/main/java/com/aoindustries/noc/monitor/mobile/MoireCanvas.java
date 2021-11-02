@@ -63,14 +63,14 @@ public class MoireCanvas extends GameCanvas implements Runnable {
 	private final int minimum=4096;
 	private final int range=24576;
 	private final boolean going=false;
-	private int dx1=1;
-	private int dy1=1;
-	private int dx2=-1;
-	private int dy2=-1;
-	private int sx1=32767;
-	private int sy1=32767;
-	private int sx2=32767;
-	private int sy2=32767;
+	private int dx1 = 1;
+	private int dy1 = 1;
+	private int dx2 = -1;
+	private int dy2 = -1;
+	private int sx1 = Short.MAX_VALUE;
+	private int sy1 = Short.MAX_VALUE;
+	private int sx2 = Short.MAX_VALUE;
+	private int sy2 = Short.MAX_VALUE;
 
 	public MoireCanvas() {
 		super(true);
@@ -171,25 +171,25 @@ public class MoireCanvas extends GameCanvas implements Runnable {
 			c=x1[0]+dx1*sx1;
 			if(c<0||c>1048575) {
 				dx1=-dx1;
-				sx1=((fastRandom.nextInt()&0x7fffffff)%range)+minimum;
+				sx1 = fastRandom.nextInt(range) + minimum;
 				x1[0]+=dx1*sx1;
 			} else x1[0]=c;
 			c=y1[0]+dy1*sy1;
 			if(c<0||c>1048575) {
 				dy1=-dy1;
-				sy1=((fastRandom.nextInt()&0x7fffffff)%range)+minimum;
+				sy1 = fastRandom.nextInt(range) + minimum;
 				y1[0]+=dy1*sy1;
 			} else y1[0]=c;
 			c=x2[0]+dx2*sx2;
 			if(c<0||c>1048575) {
 				dx2=-dx2;
-				sx2=((fastRandom.nextInt()&0x7fffffff)%range)+minimum;
+				sx2 = fastRandom.nextInt(range) + minimum;
 				x2[0]+=dx2*sx2;
 			} else x2[0]=c;
 			c=y2[0]+dy2*sy2;
 			if(c<0||c>1048575) {
 				dy2=-dy2;
-				sy2=((fastRandom.nextInt()&0x7fffffff)%range)+minimum;
+				sy2 = fastRandom.nextInt(range) + minimum;
 				y2[0]+=dy2*sy2;
 			} else y2[0]=c;
 			// Change the Color
