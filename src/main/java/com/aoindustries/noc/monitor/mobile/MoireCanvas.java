@@ -22,6 +22,8 @@
  */
 package com.aoindustries.noc.monitor.mobile;
 
+import com.aoindustries.io.IoUtils;
+import java.security.SecureRandom;
 import java.util.Random;
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.game.GameCanvas;
@@ -30,6 +32,11 @@ import javax.microedition.lcdui.game.GameCanvas;
  * @author  AO Industries, Inc.
  */
 public class MoireCanvas extends GameCanvas implements Runnable {
+
+	/**
+	 * A fast pseudo-random number generator for non-cryptographic purposes.
+	 */
+	private static final Random fastRandom = new Random(IoUtils.bufferToLong(new SecureRandom().generateSeed(Long.BYTES)));
 
 	private Thread thread;
 	private int lastX = -1;
@@ -123,7 +130,6 @@ public class MoireCanvas extends GameCanvas implements Runnable {
 		final Thread thisThread = Thread.currentThread();
 		final int width = getWidth();
 		final int height = getHeight();
-	final Random random=new Random();
 	int lastline=LINES-1;
 	int c;
 	boolean going=this.going;
@@ -165,25 +171,25 @@ public class MoireCanvas extends GameCanvas implements Runnable {
 			c=x1[0]+dx1*sx1;
 			if(c<0||c>1048575) {
 				dx1=-dx1;
-				sx1=((random.nextInt()&0x7fffffff)%range)+minimum;
+				sx1=((fastRandom.nextInt()&0x7fffffff)%range)+minimum;
 				x1[0]+=dx1*sx1;
 			} else x1[0]=c;
 			c=y1[0]+dy1*sy1;
 			if(c<0||c>1048575) {
 				dy1=-dy1;
-				sy1=((random.nextInt()&0x7fffffff)%range)+minimum;
+				sy1=((fastRandom.nextInt()&0x7fffffff)%range)+minimum;
 				y1[0]+=dy1*sy1;
 			} else y1[0]=c;
 			c=x2[0]+dx2*sx2;
 			if(c<0||c>1048575) {
 				dx2=-dx2;
-				sx2=((random.nextInt()&0x7fffffff)%range)+minimum;
+				sx2=((fastRandom.nextInt()&0x7fffffff)%range)+minimum;
 				x2[0]+=dx2*sx2;
 			} else x2[0]=c;
 			c=y2[0]+dy2*sy2;
 			if(c<0||c>1048575) {
 				dy2=-dy2;
-				sy2=((random.nextInt()&0x7fffffff)%range)+minimum;
+				sy2=((fastRandom.nextInt()&0x7fffffff)%range)+minimum;
 				y2[0]+=dy2*sy2;
 			} else y2[0]=c;
 			// Change the Color
