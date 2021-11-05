@@ -1,6 +1,6 @@
 /*
  * noc-monitor-mobile - Java ME Interface for Network Operations Center Monitoring.
- * Copyright (C) 2008, 2009, 2020, 2021  AO Industries, Inc.
+ * Copyright (C) 2009-2012, 2020, 2021  AO Industries, Inc.
  *     support@aoindustries.com
  *     7262 Bull Pen Cir
  *     Mobile, AL 36695
@@ -23,33 +23,17 @@
 package com.aoindustries.noc.monitor.mobile;
 
 /**
- * Constants used as alert levels.
+ * Constants used as authentication.  This should not be added to version control when has real username/passwor.
+ *
+ * TODO: Make username/password setting provided by user.
  *
  * @author  AO Industries, Inc.
  */
-abstract class AlertLevel {
+class Authentication {
+
+	static final String USERNAME = "TODO";
+	static final String PASSWORD = "TODO";
 
 	/** Make no instances. */
-	private AlertLevel() {throw new AssertionError();}
-
-	static final byte
-		NONE = 0,
-		LOW = 1,
-		MEDIUM = 2,
-		HIGH = 3,
-		CRITICAL = 4,
-		UNKNOWN = 5
-	;
-
-	static String getDisplay(byte alertLevel) {
-		switch(alertLevel) {
-			case NONE     : return "None";
-			case LOW      : return "Low";
-			case MEDIUM   : return "Medium";
-			case HIGH     : return "High";
-			case CRITICAL : return "Critical";
-			case UNKNOWN  : return "Unknown";
-			default       : throw new RuntimeException("Unexpected value for alertLevel: "+alertLevel);
-		}
-	}
+	private Authentication() {throw new AssertionError();}
 }

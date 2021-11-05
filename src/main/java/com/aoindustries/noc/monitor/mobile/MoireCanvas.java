@@ -261,7 +261,9 @@ public class MoireCanvas extends GameCanvas implements Runnable {
 			else {
 				try {
 					Thread.sleep(adelay);
-				} catch(InterruptedException e) {}
+				} catch(InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
 			}
 		}
 	}
