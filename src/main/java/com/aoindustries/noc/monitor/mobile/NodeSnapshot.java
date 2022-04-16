@@ -1,6 +1,6 @@
 /*
  * noc-monitor-mobile - Java ME Interface for Network Operations Center Monitoring.
- * Copyright (C) 2008, 2009, 2020, 2021  AO Industries, Inc.
+ * Copyright (C) 2008, 2009, 2020, 2021, 2022  AO Industries, Inc.
  *     support@aoindustries.com
  *     7262 Bull Pen Cir
  *     Mobile, AL 36695
@@ -20,6 +20,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with noc-monitor-mobile.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 package com.aoindustries.noc.monitor.mobile;
 
 import java.io.ByteArrayInputStream;
