@@ -33,13 +33,13 @@ package com.aoindustries.noc.monitor.mobile;
  */
 public interface UpdaterListener {
 
-	/**
-	 * Called when new nodes become available.
-	 */
-	void nodesUpdated(NodeSnapshot snapshot);
+  /**
+   * Called when new nodes become available.
+   */
+  void nodesUpdated(NodeSnapshot snapshot);
 
-	/**
-	 * Called when an exception occurs.
-	 */
-	void alert(Exception err);
+  /**
+   * Called when an exception occurs.
+   */
+  void alert(Exception err);
 }

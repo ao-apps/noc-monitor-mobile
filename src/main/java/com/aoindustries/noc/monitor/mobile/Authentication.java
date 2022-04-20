@@ -32,9 +32,11 @@ package com.aoindustries.noc.monitor.mobile;
  */
 final class Authentication {
 
-	static final String USERNAME = "TODO";
-	static final String PASSWORD = "TODO";
+  static final String USERNAME = "TODO";
+  static final String PASSWORD = "TODO";
 
-	/** Make no instances. */
-	private Authentication() {throw new AssertionError();}
+  /** Make no instances. */
+  private Authentication() {
+    throw new AssertionError();
+  }
 }

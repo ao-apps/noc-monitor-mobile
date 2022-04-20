@@ -31,23 +31,23 @@ import javax.microedition.midlet.MIDlet;
  */
 public class Moire extends MIDlet {
 
-	private MoireCanvas canvas;
+  private MoireCanvas canvas;
 
-	public Moire() {
-		canvas = new MoireCanvas();
-	}
+  public Moire() {
+    canvas = new MoireCanvas();
+  }
 
-	protected void startApp() {
-		Display display = Display.getDisplay(this);
-		canvas.start();
-		display.setCurrent(canvas);
-	}
+  protected void startApp() {
+    Display display = Display.getDisplay(this);
+    canvas.start();
+    display.setCurrent(canvas);
+  }
 
-	protected void pauseApp() {
-		canvas.stop();
-	}
+  protected void pauseApp() {
+    canvas.stop();
+  }
 
-	protected void destroyApp(boolean unconditional) {
-		canvas.stop();
-	}
+  protected void destroyApp(boolean unconditional) {
+    canvas.stop();
+  }
 }

@@ -30,27 +30,29 @@ package com.aoindustries.noc.monitor.mobile;
  */
 final class AlertLevel {
 
-	/** Make no instances. */
-	private AlertLevel() {throw new AssertionError();}
+  /** Make no instances. */
+  private AlertLevel() {
+    throw new AssertionError();
+  }
 
-	static final byte
-		NONE = 0,
-		LOW = 1,
-		MEDIUM = 2,
-		HIGH = 3,
-		CRITICAL = 4,
-		UNKNOWN = 5
-	;
+  static final byte
+    NONE = 0,
+    LOW = 1,
+    MEDIUM = 2,
+    HIGH = 3,
+    CRITICAL = 4,
+    UNKNOWN = 5
+  ;
 
-	static String getDisplay(byte alertLevel) {
-		switch(alertLevel) {
-			case NONE     : return "None";
-			case LOW      : return "Low";
-			case MEDIUM   : return "Medium";
-			case HIGH     : return "High";
-			case CRITICAL : return "Critical";
-			case UNKNOWN  : return "Unknown";
-			default       : throw new RuntimeException("Unexpected value for alertLevel: "+alertLevel);
-		}
-	}
+  static String getDisplay(byte alertLevel) {
+    switch (alertLevel) {
+      case NONE     : return "None";
+      case LOW      : return "Low";
+      case MEDIUM   : return "Medium";
+      case HIGH     : return "High";
+      case CRITICAL : return "Critical";
+      case UNKNOWN  : return "Unknown";
+      default       : throw new RuntimeException("Unexpected value for alertLevel: "+alertLevel);
+    }
+  }
 }
