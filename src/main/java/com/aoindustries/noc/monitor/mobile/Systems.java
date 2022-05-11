@@ -534,13 +534,20 @@ public class Systems extends MIDlet implements UpdaterListener, ItemStateListene
    */
   private static String getAlertLevelFilename(byte alertLevel) {
     switch (alertLevel) {
-      case AlertLevel.NONE     : return "none";
-      case AlertLevel.LOW      : return "low";
-      case AlertLevel.MEDIUM   : return "medium";
-      case AlertLevel.HIGH     : return "high";
-      case AlertLevel.CRITICAL : return "critical";
-      case AlertLevel.UNKNOWN  : return "unknown";
-      default                  : throw new RuntimeException("Unexpected value for alertLevel: "+alertLevel);
+      case AlertLevel.NONE:
+        return "none";
+      case AlertLevel.LOW:
+        return "low";
+      case AlertLevel.MEDIUM:
+        return "medium";
+      case AlertLevel.HIGH:
+        return "high";
+      case AlertLevel.CRITICAL:
+        return "critical";
+      case AlertLevel.UNKNOWN:
+        return "unknown";
+      default:
+        throw new RuntimeException("Unexpected value for alertLevel: "+alertLevel);
     }
   }
 
@@ -687,7 +694,6 @@ public class Systems extends MIDlet implements UpdaterListener, ItemStateListene
              (hour == 12 && minute >= 15)
           || (hour == 13 && minute <= 15)
         )
-      )
-    ;
+      );
   }
 }

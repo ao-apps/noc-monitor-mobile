@@ -28,7 +28,7 @@ package com.aoindustries.noc.monitor.mobile;
  *
  * @see  Updater
  * @see  Systems
- * 
+ *
  * @author  AO Industries, Inc.
  */
 public interface UpdaterListener {
