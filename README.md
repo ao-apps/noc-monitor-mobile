@@ -3,7 +3,7 @@
 [![project: end of life](https://aoindustries.com/ao-badges/project-end-of-life.svg)](https://aoindustries.com/life-cycle#project-end-of-life)
 [![management: cleanup](https://aoindustries.com/ao-badges/management-cleanup.svg)](https://aoindustries.com/life-cycle#management-cleanup)
 [![packaging: unsupported](https://aoindustries.com/ao-badges/packaging-unsupported.svg)](https://aoindustries.com/life-cycle#packaging-unsupported)  
-[![semantic versioning: 2.0.0](https://aoindustries.com/ao-badges/semver-2.0.0.svg)](http://semver.org/spec/v2.0.0.html)
+[![semantic versioning: 2.0.0](https://aoindustries.com/ao-badges/semver-2.0.0.svg)](https://semver.org/spec/v2.0.0.html)
 [![license: LGPL v3](https://aoindustries.com/ao-badges/license-lgpl-3.0.svg)](https://www.gnu.org/licenses/lgpl-3.0)
 
 Java ME Interface for [Network Operations Center Monitoring](https://github.com/ao-apps/noc-monitor).
