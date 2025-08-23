@@ -70,7 +70,7 @@ public class Systems extends MIDlet implements UpdaterListener, ItemStateListene
   private Updater updater;
   private final Object updateLock = new Object();
 
-  //private Form errorScreen;
+  // private Form errorScreen;
 
   private transient boolean isPaused;
   private Form form;
@@ -112,8 +112,8 @@ public class Systems extends MIDlet implements UpdaterListener, ItemStateListene
         newForm.append(filter);
 
         updatedTimeField = new StringItem("Last Updated", "");
-        //updatedDateField.setLayout(Item.LAYOUT_NEWLINE_AFTER);
-        //updatedDateField.setLayout(Item.LAYOUT_2);
+        // updatedDateField.setLayout(Item.LAYOUT_NEWLINE_AFTER);
+        // updatedDateField.setLayout(Item.LAYOUT_2);
         updatedTimeField.addCommand(new Command("Update Now", Command.SCREEN, 2));
         updatedTimeField.setItemCommandListener(this);
         newForm.append(updatedTimeField);
